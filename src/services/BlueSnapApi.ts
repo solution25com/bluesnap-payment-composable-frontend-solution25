@@ -178,7 +178,7 @@ const BlueSnapApi = {
             const response = await axiosInstance.get<BlueSnapConfigResponse>(
                 'bluesnap/get-config'
             );
-            console.log('API Response:', response.data);
+
             return response.data; // Return the full response for consistency
         } catch (error) {
             console.error('Error fetching BlueSnap config:', error);
@@ -187,13 +187,13 @@ const BlueSnapApi = {
     },
 
     async createTransaction(transactionId: string, orderId: string, paymentMethod: string): Promise<TransactionData> {
-        alert('create transaction')
+    
         try {
             const response: AxiosResponse<TransactionData> = await axiosInstance.post(
                 'bluesnap/create-transaction',
                 { transactionId, orderId, paymentMethod }
             );
-            console.log('Transaction and order ok:', response.data);
+
             // Return only the transaction ID from the response
             // (Adjust according to your TransactionData structure.)
             return response.data;
