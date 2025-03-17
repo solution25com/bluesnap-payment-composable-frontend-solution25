@@ -1,5 +1,4 @@
 // composables/useGooglePay.ts
-
 import BlueSnapApi from "../services/BlueSnapApi.ts";
 import { ref, Ref } from 'vue';
 import { BlueSnapConfigResponse } from '../types/ConfigTypes.ts';
@@ -13,13 +12,15 @@ export function useGooglePayment(options?: { currency: string }) {
         "3D": false,
         merchantGoogleId: '',
     });
-    const successPayment = ref<boolean | null>(null); // Allows 'true', 'false', or 'null'
+    // We still keep successPayment for UI purposes...
+    const successPayment = ref<boolean | null>(null);
+    // New ref to hold full payment result (including transaction ID)
+    const paymentResult = ref<{ success: boolean; transactionId?: string } | null>(null);
 
-    let paymentsClient: google.payments.api.PaymentsClient | null = null; // Declare paymentsClient in the composable scope
+    let paymentsClient: google.payments.api.PaymentsClient | null = null;
 
     const initializeCart = async (): Promise<void> => {
         const { totalPrice, isoCountryCode } = await BlueSnapApi.fetchCart();
-
         fetchedTotalPrice.value = totalPrice;
         fetchedIsoCountry.value = isoCountryCode;
     };
@@ -27,17 +28,14 @@ export function useGooglePayment(options?: { currency: string }) {
     const getBlueSnapConfig = async (): Promise<void> => {
         try {
             const response = await BlueSnapApi.fetchBlueSnapConfig();
-            console.log('Fetched BlueSnap Config:', response.message.mode); // Validate response logging
-
+            console.log('Fetched BlueSnap Config:', response.message.mode);
             if (response.success && response.message) {
-                // Map the response correctly
                 blueSnapConfig.value = {
                     mode: response.message.mode,
                     merchantId: response.message.merchantId,
                     "3D": response.message["3D"],
                     merchantGoogleId: response.message.merchantGoogleId,
                 };
-
             } else {
                 console.error('Failed to fetch valid BlueSnap configurations:', response);
             }
@@ -62,15 +60,14 @@ export function useGooglePayment(options?: { currency: string }) {
         const baseRequest: google.payments.api.PaymentDataRequest = {
             allowedPaymentMethods: [],
             apiVersion: 2,
-            apiVersionMinor: 0
+            apiVersionMinor: 0,
         };
 
         const tokenizationSpecification: google.payments.api.PaymentMethodTokenizationSpecification = {
-            // BLUE SNAP MERCHANT ID
             type: "PAYMENT_GATEWAY",
             parameters: {
                 gateway: "bluesnap",
-                gatewayMerchantId: blueSnapConfig.value.merchantId
+                gatewayMerchantId: blueSnapConfig.value.merchantId,
             },
         };
 
@@ -80,12 +77,10 @@ export function useGooglePayment(options?: { currency: string }) {
                 allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
                 allowedCardNetworks: ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"],
             },
-            tokenizationSpecification
+            tokenizationSpecification,
         };
 
-        const cardPaymentMethod = Object.assign({}, baseCardPaymentMethod, {
-            tokenizationSpecification: tokenizationSpecification,
-        });
+        const cardPaymentMethod = { ...baseCardPaymentMethod };
 
         const getGooglePaymentsClient = (): google.payments.api.PaymentsClient => {
             if (paymentsClient === null) {
@@ -103,33 +98,22 @@ export function useGooglePayment(options?: { currency: string }) {
             countryCode: fetchedIsoCountry.value,
             currencyCode: options?.currency,
             totalPriceStatus: "FINAL",
-            totalPrice: fetchedTotalPrice?.value.toString()
+            totalPrice: fetchedTotalPrice.value.toString(),
         });
 
         const getGooglePaymentDataRequest = (): google.payments.api.PaymentDataRequest => {
-            const paymentDataRequest = Object.assign({}, baseRequest);
+            const paymentDataRequest = { ...baseRequest };
             paymentDataRequest.allowedPaymentMethods = [cardPaymentMethod];
             paymentDataRequest.transactionInfo = getGoogleTransactionInfo();
-
             paymentDataRequest.merchantInfo = {
-                // GOOGLE MERCHANT ID
                 merchantId: blueSnapConfig.value.merchantGoogleId,
                 merchantName: "Google Merchant ID",
             };
-
             paymentDataRequest.emailRequired = true;
             paymentDataRequest.shippingAddressRequired = true;
-            // paymentDataRequest.billingAddressRequired = true;
-
             paymentDataRequest.shippingAddressParameters = {
-                phoneNumberRequired: true
+                phoneNumberRequired: true,
             };
-
-            // paymentDataRequest.billingAddressParameters = {
-            //   format: 'FULL',
-            //   phoneNumberRequired: true
-            // };
-
             return paymentDataRequest;
         };
 
@@ -147,7 +131,7 @@ export function useGooglePayment(options?: { currency: string }) {
             paymentDataRequest.transactionInfo = {
                 totalPriceStatus: "NOT_CURRENTLY_KNOWN",
                 currencyCode: options?.currency,
-                totalPrice: fetchedTotalPrice?.value.toString()
+                totalPrice: fetchedTotalPrice.value.toString(),
             };
             const client = getGooglePaymentsClient();
             client.prefetchPaymentData(paymentDataRequest);
@@ -156,12 +140,16 @@ export function useGooglePayment(options?: { currency: string }) {
         const onGooglePaymentButtonClicked = (): void => {
             const paymentDataRequest = getGooglePaymentDataRequest();
             const client = getGooglePaymentsClient();
-            client.loadPaymentData(paymentDataRequest)
+            client
+                .loadPaymentData(paymentDataRequest)
                 .then((paymentData) => processPayment(paymentData))
                 .catch((err) => console.error("Payment error:", err));
         };
 
-        const processPayment = async (paymentData: google.payments.api.PaymentData): Promise<void> => {
+        // Updated processPayment now returns an object with success and transactionId
+        const processPayment = async (
+            paymentData: google.payments.api.PaymentData
+        ): Promise<{ success: boolean; transactionId?: string }> => {
             try {
                 const paymentToken = b64EncodeUnicode(JSON.stringify(paymentData));
                 const formattedAmount = parseFloat(fetchedTotalPrice.value.toFixed(2));
@@ -169,20 +157,43 @@ export function useGooglePayment(options?: { currency: string }) {
                 const body = { gToken: paymentToken, amount: floatAmount };
                 const result = await BlueSnapApi.processGooglePayment(body);
                 console.log("Payment processed successfully:", result.success);
-                successPayment.value = result?.success === true;
+
+                if (result && result.success) {
+                    let transactionId: string | undefined;
+                    try {
+                        const parsedMessage = JSON.parse(result?.message);
+                        transactionId = parsedMessage.transactionId;
+                    } catch (e) {
+                        console.warn("No transactionId found in response message", e);
+                    }
+                    successPayment.value = true;
+                    paymentResult.value = { success: true, transactionId };
+                    return { success: true, transactionId };
+                } else {
+                    successPayment.value = false;
+                    paymentResult.value = { success: false };
+                    return { success: false };
+                }
             } catch (error) {
-                console.log(error);
+                console.error(error);
                 successPayment.value = false;
+                paymentResult.value = { success: false };
+                return { success: false };
             }
         };
 
+        // Helper to encode payment data
         const b64EncodeUnicode = (str: string): string =>
-            btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-                return String.fromCharCode(parseInt(p1, 16));
-            }));
+            btoa(
+                encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+                    return String.fromCharCode(parseInt(p1, 16));
+                })
+            );
 
+        // Check if Google Pay is ready and add the button
         const client = getGooglePaymentsClient();
-        client.isReadyToPay(getGoogleIsReadyToPayRequest())
+        client
+            .isReadyToPay(getGoogleIsReadyToPayRequest())
             .then((response) => {
                 if (response.result) {
                     addGooglePayButton();
@@ -198,6 +209,7 @@ export function useGooglePayment(options?: { currency: string }) {
         getBlueSnapConfig,
         loadGooglePayScript,
         onGooglePayLoaded,
-        successPayment
+        successPayment,
+        paymentResult, // expose the full payment result
     };
 }

@@ -18,7 +18,7 @@ export function useApplePay({ currency, domain }: { currency: string, domain: st
         mode: 'sandbox', // Default mode
         merchantId: '',
         "3D": true,
-        merchantGoogleId: '',
+        // merchantGoogleId: '',
     });
     const merchantID = computed(() => blueSnapConfig.value.merchantId);
     // const domain = 'wealthy-lionfish-hugely.ngrok-free.app';
@@ -85,14 +85,14 @@ export function useApplePay({ currency, domain }: { currency: string, domain: st
                     console.error('Error checking Apple Pay compatibility:', error);
                 }
             } else {
-                console.log('ApplePaySession.canMakePayments returned false.');
+                console.error('ApplePaySession.canMakePayments returned false.');
             }
         } else {
-            console.log('ApplePaySession is not defined on this device/browser.');
+            console.log ('ApplePaySession is not defined on this device / browser.');
         }
     };
 
-    const applePayClicked = async (onSuccess: () => void, onFailure: () => void): Promise<void> => {
+    const applePayClicked = async (onSuccess: (result) => void, onFailure: () => void): Promise<void> => {
         console.log('Apple Pay button clicked. Preparing payment request...');
         const request: ApplePayRequest = {
             countryCode: fetchedIsoCountry.value,
@@ -148,7 +148,7 @@ export function useApplePay({ currency, domain }: { currency: string, domain: st
                 if (captureResult) {
                     session.completePayment(ApplePaySession.STATUS_SUCCESS);
                     console.log('Payment Successful');
-                    onSuccess();
+                    onSuccess(captureResult);
                 } else {
                     session.completePayment(ApplePaySession.STATUS_FAILURE);
                     console.log('Payment Failed');

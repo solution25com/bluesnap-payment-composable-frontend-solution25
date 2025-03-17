@@ -1,11 +1,9 @@
 <template>
   <div id="container"></div>
-<!--    <component v-if="successPayment === true"-->
-<!--      :is="SuccessTemplate"-->
-<!--    />-->
-<!--    <component v-else-if="successPayment === false"-->
-<!--      :is="FailureTemplate" />-->
-<!--  </div>-->
+  <!--
+  <component v-if="successPayment === true" :is="SuccessTemplate" />
+  <component v-else-if="successPayment === false" :is="FailureTemplate" />
+  -->
 </template>
 
 <script>
@@ -16,7 +14,7 @@ import SuccessTemplate from "./SuccessTemplate.vue";
 
 export default {
   name: "GooglePayComponent",
-  emits: ["payment-success", "payment-failure"], // Declare emitted events
+  emits: ["payment-success", "payment-failure"],
   computed: {
     SuccessTemplate() {
       return SuccessTemplate;
@@ -31,17 +29,17 @@ export default {
       default: 0,
     },
     successComponent: {
-      type: Object, // Accept a Vue component for success
+      type: Object,
       required: false,
     },
     failureComponent: {
-      type: Object, // Accept a Vue component for failure
+      type: Object,
       required: false,
     },
     currency: {
       type: String,
       required: true,
-      default: "USD", // Default currency
+      default: "USD",
     },
   },
   setup(props, { emit }) {
@@ -50,31 +48,32 @@ export default {
       initializeCart,
       loadGooglePayScript,
       onGooglePayLoaded,
-      addGooglePayButton,
       getBlueSnapConfig,
       successPayment,
-    } = useGooglePayment({currency: props.currency});
+      paymentResult,
+    } = useGooglePayment({ currency: props.currency });
 
-    // Emit events based on `successPayment` value
-    watch(successPayment, (newValue) => {
-      if (newValue === true) {
-        console.log("Emitting payment-success event");
-        emit("payment-success");
-      } else if (newValue === false) {
-        console.log("Emitting payment-failure event");
-        emit("payment-failure");
+    // Watch the full payment result and emit events with the transactionId if available.
+    watch(paymentResult, (newValue) => {
+      if (newValue) {
+        if (newValue.success) {
+          console.log("Emitting payment-success event with transactionId:", newValue.transactionId);
+          emit("payment-success", newValue.transactionId);
+        } else {
+          console.log("Emitting payment-failure event");
+          emit("payment-failure", newValue);
+        }
       }
     });
 
-    // Initialize cart and load Google Pay script when component is mounted
+    // Initialize cart and load Google Pay script when component is mounted.
     onMounted(async () => {
-      if (getBlueSnapConfig()) {
-        await initializeCart();
-        await loadGooglePayScript(onGooglePayLoaded);
-      }
+      await getBlueSnapConfig();
+      await initializeCart();
+      await loadGooglePayScript(onGooglePayLoaded);
     });
 
-    // Watch for changes in `totalPrice` prop
+    // Optional: Watch changes in totalPrice for debugging.
     watch(
         () => props.totalPrice,
         (newValue) => {
@@ -85,13 +84,11 @@ export default {
 
     return {
       fetchedTotalPrice,
-      addGooglePayButton,
       successPayment,
     };
   },
 };
 </script>
-
 
 <style scoped>
 #id {

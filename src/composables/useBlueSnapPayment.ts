@@ -3,7 +3,6 @@
 import { ref, onMounted, watch, Ref, computed } from 'vue';
 import BlueSnapApi from '../services/BlueSnapApi.ts';
 import {
-    // BlueSnap,
     BlueSnapCallback,
     BlueSnapHostedPaymentFieldsCreateOptions,
     ThreeDSecureObj,
@@ -41,7 +40,6 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
         mode: 'sandbox', // Default mode
         merchantId: '',
         "3D": true,
-        // merchantGoogleId: '',
     });
     // Computed property for the dynamic 3DS flag
     const threeDS = computed(() => blueSnapConfig.value["3D"]);
@@ -103,6 +101,8 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
                     if (helpElement) {
                         helpElement.textContent = `${errorCode} - ${errorDescription} - ${eventOrigin}`;
                     }
+                    // Log the error details for card transaction errors
+                    console.error(`Card Transaction Error on field ${tagId}: [${errorCode}] ${errorDescription}. Origin: ${eventOrigin}`);
                 },
                 onType: (tagId: string, cardType: string) => {
                     console.log('card type', cardType);
@@ -110,7 +110,7 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
                         if (cardType) {
                             cardTypeToServer.value = cardType;
                         }
-                        console.log('card type type', cardTypeToServer);
+                        console.log('card type to server:', cardTypeToServer.value);
                         cardLogoUrl.value = cardUrl[cardType];
                         const helpElement = document.getElementById(`${tagId}-help`);
                         if (helpElement) {
@@ -182,10 +182,10 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
 
                 cardNumberDisplay.value = `**** **** **** ${cardLastFourDigits}`;
                 cardHolderName.value = `${creditCardInfo.billingContactInfo.firstName} ${creditCardInfo.billingContactInfo.lastName}`;
-                console.log('first name', vaultedFirstName.value);
-                console.log(' l name', vaultedLastName.value);
-                console.log('cc card', vaultedCardCC.value);
-                console.log('lastzz 4 digits', last4Digits.value);
+                // console.log('Vaulted shopper first name:', vaultedFirstName.value);
+                // console.log('Vaulted shopper last name:', vaultedLastName.value);
+                // console.log('Vaulted card type:', vaultedCardCC.value);
+                // console.log('Last 4 digits:', last4Digits.value);
             }
         } catch (error) {
             console.error('Error fetching shopper details:', error);
@@ -204,7 +204,10 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
             await vaultedCapture();
         } else {
             console.log('Using new credit card...');
-            await creditCardCapture();
+            await creditCardCapture(
+                () => console.log('Credit card capture success.'),
+                () => console.log('Credit card capture failed.')
+            );
         }
     };
 
@@ -229,13 +232,13 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
         console.log('Vaulted Shopper ID stored in localStorage:', vaultedShopperId);
     }
 
-    const creditCardCapture = async (onSuccess: () => void, onFailure: () => void ): Promise<void> => {
+    const creditCardCapture = async (onSuccess: (result) => void, onFailure: () => void): Promise<void> => {
         if (!tokenLoaded.value) {
             console.error('BlueSnap is not initialized.');
             onFailure();
             return;
         }
-        console.log('CreditCardCapture:', cardTypeToServer.value);
+        console.log('CreditCardCapture: card type to server:', cardTypeToServer.value);
 
         threeDSecureObj.value.billingFirstName = firstName.value;
         threeDSecureObj.value.billingLastName = lastName.value;
@@ -251,6 +254,8 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
                         if (helpElement) {
                             helpElement.textContent = `${error.errorCode} - ${error.errorDescription}`;
                         }
+                        // Log each card transaction error received from hosted payment fields
+                        console.error(`Card Transaction Error on field ${error.tagId}: [${error.errorCode}] ${error.errorDescription}`);
                     }
                     onFailure();
                     return;
@@ -261,6 +266,7 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
                         !callbackResult.threeDSecure ||
                         callbackResult.threeDSecure.authResult !== 'AUTHENTICATION_SUCCEEDED'
                     ) {
+                        console.error('3DS authentication failed:', callbackResult.threeDSecure);
                         onFailure();
                         return;
                     }
@@ -283,17 +289,18 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
                 try {
                     const result = await BlueSnapApi.BlueSnapCardCapture(body);
                     if (result?.data?.success) {
+
                         console.log('Credit card capture successful:', result.data);
                         if (saveCard.value) {
                             const vaultedShopperId = result.vaultedShopperId;
                             if (vaultedShopperId) {
-                                console.log('valuted', vaultedShopperId);
+                                console.log('Vaulted shopper ID:', vaultedShopperId);
                                 storeVaultedShopperId(vaultedShopperId);
                             } else {
                                 console.warn('No Vaulted Shopper ID returned to store.');
                             }
                         }
-                        onSuccess();
+                        onSuccess(result?.data);
                     } else {
                         console.warn('Capture result was not successful:', result?.data);
                         onFailure();
@@ -315,9 +322,9 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
                         extractedError = rawMessage;
                     }
 
-                    console.error('Error in credit card capture:', extractedError);
+                    // Additional logging for card transaction errors
+                    console.error('Credit card capture error details:', error);
                     errorMessage.value = extractedError;
-                    onFailure();
                     onFailure();
                 }
             },

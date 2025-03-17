@@ -19,6 +19,7 @@ import {
     VaultedShopperData,
 } from "../types/BlueSnapTypes.ts";
 import {getShopwareConfig} from "../config/shopwareConfig.ts";
+import {TransactionData} from "../types/types.ts";
 
 const axiosInstance: AxiosInstance = axios.create();
 
@@ -184,6 +185,24 @@ const BlueSnapApi = {
             throw new Error('Failed to fetch BlueSnap configuration');
         }
     },
+
+    async createTransaction(transactionId: string, orderId: string, paymentMethod: string): Promise<TransactionData> {
+        alert('create transaction')
+        try {
+            const response: AxiosResponse<TransactionData> = await axiosInstance.post(
+                'bluesnap/create-transaction',
+                { transactionId, orderId, paymentMethod }
+            );
+            console.log('Transaction and order ok:', response.data);
+            // Return only the transaction ID from the response
+            // (Adjust according to your TransactionData structure.)
+            return response.data;
+        } catch (error) {
+            console.error('Error sending transaction and order id:', error);
+            throw error;
+        }
+    },
+
 };
 
 export default BlueSnapApi;

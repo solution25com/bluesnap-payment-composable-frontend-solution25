@@ -4,8 +4,8 @@
 <!--        :successComponent="SuccessTemplate"-->
 <!--        :failureComponent="FailureTemplate"-->
 <!--    />-->
-<!--    <PaymentCapture/>-->
-    <ApplePayComponent/>
+    <PaymentCapture/>
+<!--    <ApplePayComponent/>-->
 <!--    <BlueSnapHostedPages />-->
   </div>
 </template>
@@ -15,7 +15,7 @@ import { defineComponent } from "vue";
 // import GooglePayComponent from "./components/GooglePayComponent.vue";
 // import SuccessTemplate from "./components/SuccessTemplate.vue";
 // import FailureTemplate from "./components/FailureTemplate.vue";
-// import PaymentCapture from "./components/PaymentCapture.vue";
+import PaymentCapture from "./components/PaymentCapture.vue";
 import ApplePayComponent from "./components/ApplePayComponent.vue";
 // import BlueSnapHostedPages from "./components/BlueSnapHostedPages.vue";
 
@@ -24,8 +24,8 @@ export default defineComponent({
   name: "App",
   components: {
     // BlueSnapHostedPages
-    ApplePayComponent
-    // PaymentCapture,
+    // ApplePayComponent
+    PaymentCapture,
     // GooglePayComponent,
     // SuccessTemplate,
     // FailureTemplate,

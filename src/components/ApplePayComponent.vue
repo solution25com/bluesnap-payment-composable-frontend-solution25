@@ -13,7 +13,7 @@ const { currency, domain } = defineProps({
   currency: {
     type: String,
     required: true,
-    default: "USD", // Default value
+    default: "USD", // Default Value
   },
   domain: {
     type: String,
@@ -24,13 +24,15 @@ const { currency, domain } = defineProps({
 const { isApplePayAvailable, applePayWarningMessage, applePayClicked } = useApplePay({ currency, domain });
 const emit = defineEmits(["payment-success", "payment-failure"]);
 
-function handleApplePayClick() {
+function handleApplePayClick(result) {
   applePayClicked(
-      () => {
-        emit("payment-success"); // Emit success event
+      (result) => {
+        const parsedJSON = JSON.parse(result.message);
+        const transactionID = parsedJSON.transactionId;
+        emit("payment-success", transactionID);
       },
       () => {
-        emit("payment-failure"); // Emit failure event
+        emit("payment-failure");
       }
   );
 }

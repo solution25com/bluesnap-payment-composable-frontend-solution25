@@ -53,3 +53,7 @@ export interface PaymentResponse {
         message: string;
     }>;
 }
+export interface TransactionData {
+    transactionId: string,
+    orderId: string,
+}

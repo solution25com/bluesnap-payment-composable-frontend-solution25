@@ -234,8 +234,10 @@ export default defineComponent({
       } else {
         await creditCardCapture(
             (result) => {
-              console.log("Payment successful:", result);
-              emit("capture-success", result);
+              // console.log('resilt', JSON.parse(result))
+              const parsedJSON = JSON.parse(result.message);
+              const transactionID = parsedJSON.transactionId;
+              emit("capture-success", transactionID);
             },
             (error) => {
               console.error("Payment failed:", error);
