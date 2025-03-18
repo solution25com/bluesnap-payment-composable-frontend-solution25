@@ -1,68 +1,70 @@
 <template>
-    <div>
-      <button class="pay-button">Pay Now</button>
+  <div>
+    <button class="pay-button">Pay Now</button>
   </div>
 </template>
 
 <script>
-import { defineComponent, watch } from 'vue';
-import BlueSnapApi from '../services/BlueSnapApi';
+import { defineComponent, watch } from "vue";
+import BlueSnapApi from "../services/BlueSnapApi";
 
 export default defineComponent({
-  name: 'BluesnapDirectDebitTest',
+  name: "BluesnapDirectDebitTest",
   props: {
     orderId: {
       type: String,
-      required: false, // Allow dynamic updates
+      required: false,
     },
     successUrl: {
       type: String,
-      required: false
+      required: false,
     },
     failedUrl: {
       type: String,
-      required: false
-    }
+      required: false,
+    },
   },
   setup(props) {
     const processPayment = async () => {
       if (!props.orderId) {
-        console.log('Order ID is not yet available.');
+        console.log("Order ID is not yet available.");
         return;
       }
 
-      console.log('Order ID is available, proceeding with payment:', props.orderId);
+      console.log(
+        "Order ID is available, proceeding with payment:",
+        props.orderId
+      );
 
       const transactionDetails = {
         order_id: props.orderId,
-        successUrl: 'https://yourdomain.com/success', // Replace with your success URL
-        failedUrl: 'https://yourdomain.com/failure', // Replace with your failure URL
-        paymentMethod: "HOSTED_CHECKOUT"
+        successUrl: "https://yourdomain.com/success",
+        failedUrl: "https://yourdomain.com/failure",
+        paymentMethod: "HOSTED_CHECKOUT",
       };
 
       try {
         const result = await BlueSnapApi.hostedCheckout(transactionDetails);
 
         if (result?.message) {
-          console.log('Redirecting to:', result.message);
-          window.location.href = result.message; // Redirect to the URL in the response
+          console.log("Redirecting to:", result.message);
+          window.location.href = result.message;
         } else {
-          console.error('Error: No redirection URL received.');
+          console.error("Error: No redirection URL received.");
         }
       } catch (error) {
-        console.error('Error during BlueSnap API call:', error);
+        console.error("Error during BlueSnap API call:", error);
       }
     };
 
-    // Automatically call processPayment when orderId is updated
     watch(
-        () => props.orderId,
-        (newOrderId) => {
-          if (newOrderId) {
-            console.log('Order ID updated:', newOrderId);
-            processPayment();
-          }
+      () => props.orderId,
+      (newOrderId) => {
+        if (newOrderId) {
+          console.log("Order ID updated:", newOrderId);
+          processPayment();
         }
+      }
     );
 
     return {
@@ -74,28 +76,27 @@ export default defineComponent({
 
 <style scoped>
 .pay-button {
-  background-color: #007bff; /* Primary button color */
-  color: #ffffff; /* White text */
-  border: none; /* No border */
-  border-radius: 5px; /* Slightly rounded corners */
-  padding: 10px 20px; /* Add some padding */
-  font-size: 16px; /* Slightly larger text */
-  font-weight: bold; /* Bold text */
-  cursor: pointer; /* Pointer cursor on hover */
-  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover effect */
-}
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 .pay-button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
-  transform: scale(1.05); /* Slightly enlarge the button */
+  background-color: #0056b3;
+  transform: scale(1.05);
 }
 
 .pay-button:active {
-  background-color: #004080; /* Even darker blue when clicked */
-  transform: scale(1); /* Reset scale on click */
+  background-color: #004080;
+  transform: scale(1);
 }
 
 .pay-button:disabled {
-  background-color: #cccccc; /* Gray color for disabled state */
-  cursor: not-allowed; /* Indicate disabled state */
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 </style>

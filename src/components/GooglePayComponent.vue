@@ -1,14 +1,10 @@
 <template>
   <div id="container"></div>
-  <!--
-  <component v-if="successPayment === true" :is="SuccessTemplate" />
-  <component v-else-if="successPayment === false" :is="FailureTemplate" />
-  -->
 </template>
 
 <script>
-import { onMounted, watch } from 'vue';
-import { useGooglePayment } from '../composables/useGooglePayment.ts';
+import { onMounted, watch } from "vue";
+import { useGooglePayment } from "../composables/useGooglePayment.ts";
 import FailureTemplate from "./FailureTemplate.vue";
 import SuccessTemplate from "./SuccessTemplate.vue";
 
@@ -53,11 +49,13 @@ export default {
       paymentResult,
     } = useGooglePayment({ currency: props.currency });
 
-    // Watch the full payment result and emit events with the transactionId if available.
     watch(paymentResult, (newValue) => {
       if (newValue) {
         if (newValue.success) {
-          console.log("Emitting payment-success event with transactionId:", newValue.transactionId);
+          console.log(
+            "Emitting payment-success event with transactionId:",
+            newValue.transactionId
+          );
           emit("payment-success", newValue.transactionId);
         } else {
           console.log("Emitting payment-failure event");
@@ -66,20 +64,18 @@ export default {
       }
     });
 
-    // Initialize cart and load Google Pay script when component is mounted.
     onMounted(async () => {
       await getBlueSnapConfig();
       await initializeCart();
       await loadGooglePayScript(onGooglePayLoaded);
     });
 
-    // Optional: Watch changes in totalPrice for debugging.
     watch(
-        () => props.totalPrice,
-        (newValue) => {
-          console.log("Total Price:", newValue);
-          console.log("Success payment state:", successPayment);
-        }
+      () => props.totalPrice,
+      (newValue) => {
+        console.log("Total Price:", newValue);
+        console.log("Success payment state:", successPayment);
+      }
     );
 
     return {
