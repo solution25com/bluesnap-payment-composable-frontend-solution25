@@ -1,20 +1,20 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
   plugins: [vue()],
   build: {
-    cssCodeSplit: false, // Ensures CSS is extracted
+    cssCodeSplit: false,
     lib: {
-      entry: 'src/index.js',
-      name: 'MyLibrary',
-      fileName: (format) => `my-library.${format}.js`,
+      entry: "src/index.js",
+      name: "BlueSnapLibrary",
+      fileName: (format) => `BlueSnapLibrary.${format}.js`,
     },
     rollupOptions: {
-      external: ['vue'], // Prevent bundling Vue
+      external: ["vue"],
       output: {
         globals: {
-          vue: 'Vue',
+          vue: "Vue",
         },
       },
     },
