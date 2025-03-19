@@ -1,47 +1,45 @@
 // src/composables/useBluesnapPayment.js
-import { ref } from 'vue';
-import BlueSnapApi from '../services/BlueSnapApi.ts';
+import { ref } from "vue";
+import BlueSnapApi from "../services/BlueSnapApi.ts";
 
 export function useBlueSnapHostedPages() {
-    const error = ref(null);
+  const error = ref(null);
 
-    async function processPayment() {
-        try {
-            const result = await BlueSnapApi.hostedCheckout();
-            console.log('BlueSnap API response:', result.message.jwt);
+  async function processPayment() {
+    try {
+      const result = await BlueSnapApi.hostedCheckout();
 
-            if (result) {
-                const token = result.message.jwt;
+      if (result) {
+        const token = result.message.jwt;
 
-                const disabledPaymentMethods = [
-                    "APPLE_PAY",
-                    "PAYPAL",
-                    "SEPA",
-                    // "ACSS_DIRECT_DEBIT",
-                    // "CC",
-                    "ECP",
-                    "GOOGLE_PAY_TOKENIZED_CARD",
-                ];
+        const disabledPaymentMethods = [
+          "APPLE_PAY",
+          "PAYPAL",
+          "SEPA",
 
-                const sdkRequest = {
-                    jwt: token,
-                    displayData: {
-                        disabledPaymentMethods: disabledPaymentMethods,
-                    },
-                };
-                bluesnap.redirectToPaymentPage(sdkRequest);
-            } else {
-                console.error("Error: No token received");
-                error.value = "Error: No token received";
-            }
-        } catch (e) {
-            console.error(e);
-            error.value = e.message;
-        }
+          "ECP",
+          "GOOGLE_PAY_TOKENIZED_CARD",
+        ];
+
+        const sdkRequest = {
+          jwt: token,
+          displayData: {
+            disabledPaymentMethods: disabledPaymentMethods,
+          },
+        };
+        bluesnap.redirectToPaymentPage(sdkRequest);
+      } else {
+        console.error("Error: No token received");
+        error.value = "Error: No token received";
+      }
+    } catch (e) {
+      console.error(e);
+      error.value = e.message;
     }
+  }
 
-    return {
-        processPayment,
-        error,
-    };
+  return {
+    processPayment,
+    error,
+  };
 }
