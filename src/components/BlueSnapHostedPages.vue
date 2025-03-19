@@ -85,6 +85,7 @@ export default defineComponent({
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
+}
 .pay-button:hover {
   background-color: #0056b3;
   transform: scale(1.05);
