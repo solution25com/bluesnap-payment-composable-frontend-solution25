@@ -1,0 +1,24 @@
+@use './variables.scss' as variables;
+@use 'sass:color';
+
+@mixin button-style {
+  padding: 14px 28px;
+  background-color: variables.$primary-color;
+  color: variables.$white;
+  font-size: 17px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: variables.$font-family;
+  transition: background-color 0.3s;
+
+  &:hover:not(:disabled) {
+    background-color: color.adjust(variables.$primary-color, $lightness: -10%);
+  }
+
+  &:disabled {
+    background-color: variables.$disabled-color;
+    cursor: not-allowed;
+  }
+}
