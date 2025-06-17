@@ -2,6 +2,8 @@
 
 The BlueSnap Payment Plugin for Shopware's Composable Frontend provides a modern, headless-compatible integration that supports seamless, secure, and scalable payment experiences. This plugin is tailored for custom storefronts built using frameworks like Vue.js and Nuxt, enabling API-first, frontend-agnostic commerce solutions.
 
+the main bluesnap plugin repo : [BlueSnap Payment](https://github.com/solution25com/bluesnap-payment-shopware-6-solution25)
+
 ---
 
 ##  Features
