@@ -122,6 +122,8 @@ export function useBluesnapPayment({ currency }: { currency: string }) {
             if (helpElement) {
               helpElement.textContent = "";
             }
+          } else {
+            cardLogoUrl.value = CART_LOG_URG
           }
         },
         onValid: (tagId: string) => {
